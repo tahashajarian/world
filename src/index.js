@@ -75,24 +75,55 @@ class GameManager {
     ground.material.map.encoding = THREE.sRGBEncoding;
     ground.receiveShadow = true;
     this._scene.add(ground);
+    this._animations = {};
+    this.mixers = [];
     this.loadPlayer()
     this.loadTrees();
     this._RAF();
   }
 
   loadPlayer() {
-    const FBXLoaderInstance = new FBXLoader();
-    FBXLoaderInstance.load(require('./resources/player.fbx').default, (object) => {
-      object.position.set(0, 0, 0)
-      object.scale.multiplyScalar(0.25);
-      this._scene.add(object);
-      this.player = object
+    const loader = new FBXLoader();
+    loader.load(require('./resources/zombie/mremireh_o_desbiens.fbx').default, (fbx) => {
+      fbx.scale.setScalar(0.1);
+      fbx.traverse(c => {
+        c.castShadow = true;
+      });
+
+      this._target = fbx;
+      this.player = this._target
+      this._scene.add(this._target);
+
+      this._mixer = new THREE.AnimationMixer(this.player);
+
+      this._manager = new THREE.LoadingManager();
+      this._manager.onLoad = () => {
+        const idleAction = this._animations['idle'].action;
+        idleAction.play();
+      };
+
+      const _OnLoad = (animName, anim) => {
+        const clip = anim.animations[0];
+        const action = this._mixer.clipAction(clip);
+
+        this._animations[animName] = {
+          clip: clip,
+          action: action,
+        };
+      };
+
+      const loader = new FBXLoader(this._manager);
+      loader.load(require('./resources/zombie/walk.fbx').default, (a) => { _OnLoad('walk', a); });
+      loader.load(require('./resources/zombie/run.fbx').default, (a) => { _OnLoad('run', a); });
+      loader.load(require('./resources/zombie/idle.fbx').default, (a) => { _OnLoad('idle', a); });
+      loader.load(require('./resources/zombie/dance.fbx').default, (a) => { _OnLoad('dance', a); });
     });
   }
 
+
+
   loadTrees() {
     const FBXLoaderInstance = new FBXLoader();
-
     FBXLoaderInstance.load(
       require("./resources/tree.fbx").default,
       (object) => {
@@ -167,6 +198,9 @@ class GameManager {
         if (!this.movement.jumping)
           this.movement.jump = true;
         break;
+      case "KeyX":
+        if (!this.movement.dancing)
+          this.movement.dance = true;
     }
   };
 
@@ -176,33 +210,35 @@ class GameManager {
     this.playerJumpHeight = 100
     const cameraPosition = this._camera.position
     const playerPosition = this.player ? this.player.position : { x: 0, y: 0, z: 0 }
+
     if (this.movement.moveForward) {
       this.player.position.set(playerPosition.x, playerPosition.y, playerPosition.z + this.playerSpeed * delta)
       this._camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z + this.playerSpeed * delta)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
       this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
-
     }
+
     if (this.movement.moveBackward) {
       this.player.position.set(playerPosition.x, playerPosition.y, playerPosition.z - this.playerSpeed * delta)
       this._camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z - this.playerSpeed * delta)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
       this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
-
     }
+
     if (this.movement.moveLeft) {
       this.player.position.set(playerPosition.x + this.playerSpeed * delta, playerPosition.y, playerPosition.z)
       this._camera.position.set(cameraPosition.x + this.playerSpeed * delta, cameraPosition.y, cameraPosition.z)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
       this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
-
     }
+
     if (this.movement.moveRight) {
       this.player.position.set(playerPosition.x - this.playerSpeed * delta, playerPosition.y, playerPosition.z)
       this._camera.position.set(cameraPosition.x - this.playerSpeed * delta, cameraPosition.y, cameraPosition.z)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
       this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
     }
+
     if (this.movement.jump) {
       this.movement.jumping = true
       this.player.position.set(playerPosition.x, playerPosition.y + this.playerJumpHeight * delta, playerPosition.z)
@@ -217,36 +253,25 @@ class GameManager {
           }, 150);
         }, 300);
     }
+
     if (this.movement.jumpDown) {
       let yPosition = playerPosition.y - this.playerJumpHeight * delta;
       if (yPosition <= 0) {
         yPosition = 0;
         this.movement.jumpDown = false
         this.movement.jumping = false
-
       }
       this.player.position.set(playerPosition.x, yPosition, playerPosition.z)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
       this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
-      // this.updateCameraPosition()
+    }
 
+    if (this.movement.dance) {
+      this.movement.dancing = true
+      this.movement.dance = false
     }
   }
-  // updateCameraPosition() {
-  //   const playerPosition = this.player ? this.player.position : { x: 0, y: 0, z: 0 }
-  //   const cameraPosition = this._camera.position
-  //   const final = {
-  //     x: playerPosition.x + cameraPosition.x,
-  //     y: playerPosition.y + cameraPosition.y,
-  //     z: playerPosition.z + cameraPosition.z
-  //   }
-  //   console.log('player => ', playerPosition,)
-  //   console.log('camera => ', cameraPosition,)
-  //   console.log('final => ', final)
-  //   this._camera.position.set(final.x, final.y, final.z)
-  //   this.OrbitControls.target.set(playerPosition.x + (playerPosition.x - this._camera.position.x), playerPosition.y, playerPosition.z);
-  //   this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
-  // }
+
 
   _OnWindowResize() {
     this._camera.aspect = window.innerWidth / window.innerHeight;
