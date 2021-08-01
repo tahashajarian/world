@@ -32,7 +32,7 @@ class GameManager {
       moveBackward: false,
       moveRight: false,
       moveLeft: false,
-      canJump: false
+      jump: false
     }
 
     this.clock = new THREE.Clock();
@@ -50,18 +50,17 @@ class GameManager {
     const near = 1.0;
     const far = 10000.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(0, 40, -80);
+    this._camera.position.set(0, 60, -130);
     this._scene = new THREE.Scene();
     let light = new THREE.DirectionalLight(0xffffff, 1.0);
     this._scene.add(light);
     light = new THREE.AmbientLight(0xffffff, 0.25);
     this._scene.add(light);
-    const controls = new OrbitControls(this._camera, this._threejs.domElement);
-    controls.target.set(0, 0, 0);
-    controls.maxPolarAngle = Math.PI * 0.5 - 0.1;
-    controls.minDistance = 20;
-    controls.maxDistance = 5000;
-    controls.update();
+    this.OrbitControls = new OrbitControls(this._camera, this._threejs.domElement);
+    this.OrbitControls.maxPolarAngle = Math.PI * 0.5 - 0.1;
+    this.OrbitControls.minDistance = 20;
+    this.OrbitControls.maxDistance = 5000;
+    this.OrbitControls.update();
     this._scene.background = new THREE.Color(0xcce0ff);
     const gt = new THREE.TextureLoader().load(
       require("./resources/g.jpg").default
@@ -139,10 +138,7 @@ class GameManager {
         this.movement.moveRight = true;
         break;
 
-      case "Space":
-        if (canJump === true) velocity.y += 350;
-        this.movement.canJump = false;
-        break;
+
     }
   };
 
@@ -167,25 +163,90 @@ class GameManager {
       case "KeyD":
         this.movement.moveRight = false;
         break;
+      case "Space":
+        if (!this.movement.jumping)
+          this.movement.jump = true;
+        break;
     }
   };
 
+
   updatePlayer(delta) {
     this.playerSpeed = 20;
+    this.playerJumpHeight = 100
+    const cameraPosition = this._camera.position
     const playerPosition = this.player ? this.player.position : { x: 0, y: 0, z: 0 }
     if (this.movement.moveForward) {
       this.player.position.set(playerPosition.x, playerPosition.y, playerPosition.z + this.playerSpeed * delta)
+      this._camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z + this.playerSpeed * delta)
+      this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
+      this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+
     }
     if (this.movement.moveBackward) {
       this.player.position.set(playerPosition.x, playerPosition.y, playerPosition.z - this.playerSpeed * delta)
+      this._camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z - this.playerSpeed * delta)
+      this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
+      this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+
     }
     if (this.movement.moveLeft) {
       this.player.position.set(playerPosition.x + this.playerSpeed * delta, playerPosition.y, playerPosition.z)
+      this._camera.position.set(cameraPosition.x + this.playerSpeed * delta, cameraPosition.y, cameraPosition.z)
+      this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
+      this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+
     }
     if (this.movement.moveRight) {
       this.player.position.set(playerPosition.x - this.playerSpeed * delta, playerPosition.y, playerPosition.z)
+      this._camera.position.set(cameraPosition.x - this.playerSpeed * delta, cameraPosition.y, cameraPosition.z)
+      this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
+      this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+    }
+    if (this.movement.jump) {
+      this.movement.jumping = true
+      this.player.position.set(playerPosition.x, playerPosition.y + this.playerJumpHeight * delta, playerPosition.z)
+      this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
+      this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+      if (!this.playerJumpTimeOut)
+        this.playerJumpTimeOut = setTimeout(() => {
+          this.movement.jump = false
+          this.playerJumpTimeOut = null
+          setTimeout(() => {
+            this.movement.jumpDown = true
+          }, 150);
+        }, 300);
+    }
+    if (this.movement.jumpDown) {
+      let yPosition = playerPosition.y - this.playerJumpHeight * delta;
+      if (yPosition <= 0) {
+        yPosition = 0;
+        this.movement.jumpDown = false
+        this.movement.jumping = false
+
+      }
+      this.player.position.set(playerPosition.x, yPosition, playerPosition.z)
+      this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
+      this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+      // this.updateCameraPosition()
+
     }
   }
+  // updateCameraPosition() {
+  //   const playerPosition = this.player ? this.player.position : { x: 0, y: 0, z: 0 }
+  //   const cameraPosition = this._camera.position
+  //   const final = {
+  //     x: playerPosition.x + cameraPosition.x,
+  //     y: playerPosition.y + cameraPosition.y,
+  //     z: playerPosition.z + cameraPosition.z
+  //   }
+  //   console.log('player => ', playerPosition,)
+  //   console.log('camera => ', cameraPosition,)
+  //   console.log('final => ', final)
+  //   this._camera.position.set(final.x, final.y, final.z)
+  //   this.OrbitControls.target.set(playerPosition.x + (playerPosition.x - this._camera.position.x), playerPosition.y, playerPosition.z);
+  //   this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+  // }
 
   _OnWindowResize() {
     this._camera.aspect = window.innerWidth / window.innerHeight;
