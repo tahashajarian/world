@@ -74,11 +74,18 @@ class GameManager {
     ground.material.map.wrapT = THREE.RepeatWrapping;
     ground.material.map.encoding = THREE.sRGBEncoding;
     ground.receiveShadow = true;
+    // const near = 1;
+    // const far = 2;
+    const color = 'lightblue';
+    this._scene.fog = new THREE.Fog(0xcce0ff, 100, 3000);
     this._scene.add(ground);
     this._animations = {};
     this.mixers = [];
     this.loadPlayer()
     this.loadTrees();
+    this.loadTrees2();
+    this.loadTrees3();
+    this.loadTrees4();
     this._RAF();
   }
 
@@ -100,6 +107,7 @@ class GameManager {
       this._manager.onLoad = () => {
         const idleAction = this._animations['idle'].action;
         idleAction.play();
+
       };
 
       const _OnLoad = (animName, anim) => {
@@ -131,7 +139,7 @@ class GameManager {
           c.castShadow = true;
           c.receiveShadow = true;
         });
-        for (let i = 0; i < 1000; i++) {
+        for (let i = 0; i < 300; i++) {
           const cloneTree = object.clone();
           cloneTree.rotation.y = Math.PI / (Math.random() * 2);
           cloneTree.scale.setScalar(Math.random() * 0.1 + 0.05);
@@ -146,6 +154,83 @@ class GameManager {
 
     );
   }
+
+  loadTrees2() {
+    const FBXLoaderInstance = new FBXLoader();
+    FBXLoaderInstance.load(
+      require("./resources/tree2.fbx").default,
+      (object) => {
+        object.traverse((c) => {
+          c.castShadow = true;
+          c.receiveShadow = true;
+        });
+        for (let i = 0; i < 300; i++) {
+          const cloneTree = object.clone();
+          cloneTree.rotation.y = Math.PI / (Math.random() * 2);
+          cloneTree.scale.setScalar(Math.random() * 0.08 + 0.04);
+          cloneTree.position.set(
+            Math.random() * 10000 - 5000,
+            0,
+            Math.random() * 10000 - 5000
+          );
+          this._scene.add(cloneTree);
+        }
+      },
+
+    );
+  }
+
+
+  loadTrees3() {
+    const FBXLoaderInstance = new FBXLoader();
+    FBXLoaderInstance.load(
+      require("./resources/tree3.fbx").default,
+      (object) => {
+        object.traverse((c) => {
+          c.castShadow = true;
+          c.receiveShadow = true;
+        });
+        for (let i = 0; i < 300; i++) {
+          const cloneTree = object.clone();
+          cloneTree.rotation.y = Math.PI / (Math.random() * 2);
+          cloneTree.scale.setScalar(Math.random() * 0.08 + 0.04);
+          cloneTree.position.set(
+            Math.random() * 10000 - 5000,
+            0,
+            Math.random() * 10000 - 5000
+          );
+          this._scene.add(cloneTree);
+        }
+      },
+
+    );
+  }
+
+  loadTrees4() {
+    const FBXLoaderInstance = new FBXLoader();
+    FBXLoaderInstance.load(
+      require("./resources/tree4.fbx").default,
+      (object) => {
+        object.traverse((c) => {
+          c.castShadow = true;
+          c.receiveShadow = true;
+        });
+        for (let i = 0; i < 300; i++) {
+          const cloneTree = object.clone();
+          cloneTree.rotation.y = Math.PI / (Math.random() * 2);
+          cloneTree.scale.setScalar(Math.random() * 0.08 + 0.04);
+          cloneTree.position.set(
+            Math.random() * 10000 - 5000,
+            0,
+            Math.random() * 10000 - 5000
+          );
+          this._scene.add(cloneTree);
+        }
+      },
+
+    );
+  }
+
 
   onKeyDown(event) {
     switch (event.code) {
@@ -206,12 +291,14 @@ class GameManager {
 
 
   updatePlayer(delta) {
-    this.playerSpeed = 20;
+    this.playerSpeed = 50;
     this.playerJumpHeight = 100
     const cameraPosition = this._camera.position
     const playerPosition = this.player ? this.player.position : { x: 0, y: 0, z: 0 }
 
     if (this.movement.moveForward) {
+      console.log(this._animations)
+
       this.player.position.set(playerPosition.x, playerPosition.y, playerPosition.z + this.playerSpeed * delta)
       this._camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z + this.playerSpeed * delta)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
