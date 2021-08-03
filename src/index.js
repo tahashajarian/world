@@ -86,6 +86,7 @@ class GameManager {
     this.loadTrees2();
     this.loadTrees3();
     this.loadTrees4();
+    this.loadClouds()
     this._RAF();
   }
 
@@ -99,15 +100,21 @@ class GameManager {
 
       this._target = fbx;
       this.player = this._target
+      this.player.position.set(0, 0.4, 0)
       this._scene.add(this._target);
 
       this._mixer = new THREE.AnimationMixer(this.player);
 
       this._manager = new THREE.LoadingManager();
       this._manager.onLoad = () => {
-        const idleAction = this._animations['idle'].action;
-        idleAction.play();
-
+        // this._stateMachine.SetState('idle');
+        // console.log(
+        //   this._animations.idle
+        // )
+        const idleAction = this._animations.idle.action
+        idleAction.play()
+        this._mixer.update()
+        // console.log(idleAction)
       };
 
       const _OnLoad = (animName, anim) => {
@@ -125,6 +132,7 @@ class GameManager {
       loader.load(require('./resources/zombie/run.fbx').default, (a) => { _OnLoad('run', a); });
       loader.load(require('./resources/zombie/idle.fbx').default, (a) => { _OnLoad('idle', a); });
       loader.load(require('./resources/zombie/dance.fbx').default, (a) => { _OnLoad('dance', a); });
+      loader.load(require('./resources/zombie/backWalk.fbx').default, (a) => { _OnLoad('backWalk', a); });
     });
   }
 
@@ -139,13 +147,38 @@ class GameManager {
           c.castShadow = true;
           c.receiveShadow = true;
         });
-        for (let i = 0; i < 300; i++) {
+        for (let i = 0; i < 250; i++) {
           const cloneTree = object.clone();
           cloneTree.rotation.y = Math.PI / (Math.random() * 2);
           cloneTree.scale.setScalar(Math.random() * 0.1 + 0.05);
           cloneTree.position.set(
-            Math.random() * 10000 - 5000,
+            Math.random() * -5000,
             0,
+            Math.random() * -5000
+          );
+          this._scene.add(cloneTree);
+        }
+      },
+
+    );
+  }
+
+  loadClouds() {
+    const FBXLoaderInstance = new FBXLoader();
+    FBXLoaderInstance.load(
+      require(`./resources/Cloud_${parseInt(Math.random() * 4 + 1)}.fbx`).default,
+      (object) => {
+        object.traverse((c) => {
+          c.castShadow = true;
+          c.receiveShadow = true;
+        });
+        for (let i = 0; i < 100; i++) {
+          const cloneTree = object.clone();
+          cloneTree.rotation.y = Math.PI / (Math.random() * 2);
+          cloneTree.scale.setScalar(Math.random() + 0.7);
+          cloneTree.position.set(
+            Math.random() * 10000 - 5000,
+            600,
             Math.random() * 10000 - 5000
           );
           this._scene.add(cloneTree);
@@ -164,14 +197,14 @@ class GameManager {
           c.castShadow = true;
           c.receiveShadow = true;
         });
-        for (let i = 0; i < 300; i++) {
+        for (let i = 0; i < 250; i++) {
           const cloneTree = object.clone();
           cloneTree.rotation.y = Math.PI / (Math.random() * 2);
           cloneTree.scale.setScalar(Math.random() * 0.08 + 0.04);
           cloneTree.position.set(
-            Math.random() * 10000 - 5000,
+            Math.random() * 5000,
             0,
-            Math.random() * 10000 - 5000
+            Math.random() * -5000
           );
           this._scene.add(cloneTree);
         }
@@ -190,14 +223,14 @@ class GameManager {
           c.castShadow = true;
           c.receiveShadow = true;
         });
-        for (let i = 0; i < 300; i++) {
+        for (let i = 0; i < 250; i++) {
           const cloneTree = object.clone();
           cloneTree.rotation.y = Math.PI / (Math.random() * 2);
           cloneTree.scale.setScalar(Math.random() * 0.08 + 0.04);
           cloneTree.position.set(
-            Math.random() * 10000 - 5000,
+            Math.random() * -5000,
             0,
-            Math.random() * 10000 - 5000
+            Math.random() * 5000
           );
           this._scene.add(cloneTree);
         }
@@ -215,14 +248,14 @@ class GameManager {
           c.castShadow = true;
           c.receiveShadow = true;
         });
-        for (let i = 0; i < 300; i++) {
+        for (let i = 0; i < 250; i++) {
           const cloneTree = object.clone();
           cloneTree.rotation.y = Math.PI / (Math.random() * 2);
           cloneTree.scale.setScalar(Math.random() * 0.08 + 0.04);
           cloneTree.position.set(
-            Math.random() * 10000 - 5000,
+            Math.random() * 5000,
             0,
-            Math.random() * 10000 - 5000
+            Math.random() * 5000
           );
           this._scene.add(cloneTree);
         }
@@ -291,18 +324,27 @@ class GameManager {
 
 
   updatePlayer(delta) {
-    this.playerSpeed = 50;
+    this.playerSpeed = 10;
     this.playerJumpHeight = 100
     const cameraPosition = this._camera.position
     const playerPosition = this.player ? this.player.position : { x: 0, y: 0, z: 0 }
 
     if (this.movement.moveForward) {
-      console.log(this._animations)
-
+      if (this._animations && this._animations.walk) {
+        const clipAction = this._animations.walk.action
+        clipAction.play()
+        this._mixer.update(0.02)
+      }
       this.player.position.set(playerPosition.x, playerPosition.y, playerPosition.z + this.playerSpeed * delta)
       this._camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z + this.playerSpeed * delta)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
       this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+    } else {
+      // if (this._animations && this._animations.idle) {
+      //   const clipAction = this._animations.idle.action
+      //   clipAction.play()
+      //   this._mixer.update()
+      // }
     }
 
     if (this.movement.moveBackward) {
@@ -310,6 +352,11 @@ class GameManager {
       this._camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z - this.playerSpeed * delta)
       this.OrbitControls.target.set(playerPosition.x, playerPosition.y, playerPosition.z);
       this._camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z)
+      if (this._animations && this._animations.backWalk) {
+        const clipAction = this._animations.backWalk.action
+        clipAction.play()
+        this._mixer.update(0.02)
+      }
     }
 
     if (this.movement.moveLeft) {
@@ -356,7 +403,14 @@ class GameManager {
     if (this.movement.dance) {
       this.movement.dancing = true
       this.movement.dance = false
+      if (this._animations && this._animations.dance) {
+        const clipAction = this._animations.dance.action
+        clipAction.play()
+        this._mixer.update(0.1)
+      }
+      this.movement.dancing = false
     }
+    // if (this.mov)
   }
 
 
